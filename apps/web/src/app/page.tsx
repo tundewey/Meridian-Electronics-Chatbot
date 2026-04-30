@@ -73,7 +73,9 @@ type ChatRole = "user" | "assistant";
 
 type Message = { role: ChatRole; content: string };
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+/** Trimmed at runtime; empty in production if Vercel build lacked NEXT_PUBLIC_API_URL */
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").trim();
+const apiConfigured = API_BASE.length > 0;
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -82,7 +84,18 @@ export default function Home() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!input.trim() || !API) return;
+    if (!input.trim()) return;
+    if (!apiConfigured) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "Configuration error: NEXT_PUBLIC_API_URL is not set. In Vercel → Settings → Environment Variables, add NEXT_PUBLIC_API_URL with your Render API URL (https://…), apply to Production, then Redeploy.",
+        },
+      ]);
+      return;
+    }
 
     const userMessage: Message = { role: "user", content: input.trim() };
     const next = [...messages, userMessage];
@@ -91,7 +104,7 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API}/v1/chat`, {
+      const res = await fetch(`${API_BASE}/v1/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: next }),
@@ -125,7 +138,26 @@ export default function Home() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-4 p-4">
-      <ul className="flex flex-1 flex-col gap-2 overflow-y-auto rounded border p-4">
+      {!apiConfigured && (
+        <div
+          role="alert"
+          className="rounded-lg border border-amber-500 bg-amber-50 px-4 py-3 text-sm text-gray-900 shadow-sm"
+        >
+          <p className="font-semibold text-amber-950">Backend URL not configured</p>
+          <p className="mt-1 text-gray-800">
+            Add{" "}
+            <code className="rounded bg-amber-100 px-1.5 py-0.5 text-xs">
+              NEXT_PUBLIC_API_URL
+            </code>{" "}
+            in Vercel → Project → Settings → Environment Variables (Production), e.g.{" "}
+            <code className="rounded bg-amber-100 px-1.5 py-0.5 text-xs">
+              https://your-api.onrender.com
+            </code>
+            , then <strong>Redeploy</strong>. Chat cannot send until this is set at build time.
+          </p>
+        </div>
+      )}
+      <ul className="flex flex-1 flex-col gap-2 overflow-y-auto rounded border border-zinc-300 bg-white/90 p-4 text-gray-900">
         {messages.map((m, i) => (
           <li
             key={i}
@@ -141,15 +173,15 @@ export default function Home() {
       </ul>
       <form onSubmit={onSubmit} className="flex gap-2">
         <input
-          className="flex-1 rounded border px-3 py-2"
+          className="flex-1 rounded border border-zinc-400 bg-white px-3 py-2 text-gray-900 placeholder:text-zinc-500 disabled:opacity-60"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message…"
-          disabled={loading}
+          disabled={loading || !apiConfigured}
         />
         <button
           type="submit"
-          disabled={loading || !input.trim()}
+          disabled={loading || !input.trim() || !apiConfigured}
           className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
         >
           Send
