@@ -19,6 +19,9 @@ apps/web/.env.local
 apps/web/.next/
 apps/web/out/
 
+# Vercel (CLI link)
+**/.vercel/
+
 # OS / IDE
 .DS_Store
 Thumbs.db
