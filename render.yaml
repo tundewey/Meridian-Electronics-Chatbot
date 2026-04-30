@@ -1,0 +1,19 @@
+# Render Blueprint: https://dashboard.render.com/select-repo?type=blueprint
+# After deploy, set secret/sync env vars in the dashboard if marked sync: false.
+services:
+  - type: web
+    name: meridian-api
+    plan: free
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: ./apps/api
+    healthCheckPath: /health
+    envVars:
+      - key: MCP_SERVER_URL
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: openai/gpt-4o-mini
+      - key: CORS_ORIGINS
+        sync: false
