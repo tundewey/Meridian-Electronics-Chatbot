@@ -12,24 +12,23 @@
 
 ## 2. Environment variable (production API)
 
-After your API is live (e.g. on Render), add in Vercel:
+The chat UI calls **`/api/chat`** on Vercel first; that **Route Handler** forwards to your FastAPI URL **from the server**, so the **browser does not need CORS** access to Render.
 
 **Project → Settings → Environment Variables**
 
 | Name | Value | Environment |
 |------|--------|-------------|
-| `NEXT_PUBLIC_API_URL` | `https://your-api.onrender.com` | Production (and Preview if you use a staging API) |
+| **`API_URL`** | `https://your-api.onrender.com` | Production (recommended) |
 
-- Use your **real Render HTTPS URL**, **no trailing slash** (or stay consistent with how `fetch` builds the URL in `src/app/page.tsx`).
-- Redeploy after saving env vars (Deployments → … → Redeploy), or push a commit.
+- **No trailing slash** on the URL.
+- **`API_URL` is not exposed to the browser** (unlike `NEXT_PUBLIC_*`).
+- If you already use `NEXT_PUBLIC_API_URL`, the proxy will use it as a **fallback** when `API_URL` is unset — but you must still use the **proxy** (the app uses `/api/chat`), so CORS from the browser to Render is no longer required for chat.
 
-`NEXT_PUBLIC_*` is baked into the browser bundle at **build time**, so it must be set in Vercel before/with each production build.
+Redeploy after saving env vars (Deployments → … → Redeploy), or push a commit.
 
-## 3. Match CORS on the API
+## 3. CORS on the API (optional for this setup)
 
-On Render, set **`CORS_ORIGINS`** to your Vercel URL, e.g.  
-`https://meridian-electronics-chatbot.vercel.app`  
-(or your custom domain). Without this, the browser blocks `fetch` to the API.
+Because the browser only talks to Vercel, **you do not need** to add your Vercel domain to FastAPI **`CORS_ORIGINS`** for the chat flow. Keep `CORS_ORIGINS` for **local dev** (e.g. `http://localhost:3000`) or if you call the API directly from other origins.
 
 ## 4. CLI (optional)
 
